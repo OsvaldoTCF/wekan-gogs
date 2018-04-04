@@ -1,7 +1,7 @@
 # wekan-gogs
 
 **wekan-gogs** is a small NodeJS application than provides bidirectional
-communication between [Wekan](https://github.com/wekan/wekan) and
+communication between [Wekan](https://wekan.github.io) and
 [Gogs](https://github.com/gogits/gogs).
 
 ## Install

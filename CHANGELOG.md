@@ -18,12 +18,12 @@
 - #14 Name the software
 
 ## [0.0.3] - 2017-09-29
-###Added
+### Added
 - Server can be run with 'no-cli' parameter in order to run in background
 - #8 Add/remove card when an issue is opened or reopened/closed
 - #9 Add comment to issue when a comment is added in the card and vice versa
 
-(waiting [merge](https://github.com/wekan/wekan/pull/1263)
+(waiting [merge](https://github.com/wekan/wekan/pull/1263))
 
 ## [0.0.2] - 2017-09-08
 ### Fixed
@@ -37,13 +37,13 @@
 - Create Priority board
 - Add webhook integration to boards
 - Activate repo:
- - Create board
- - Create labels in Gogs
- - Create webhook in repo
+  - Create board
+  - Create labels in Gogs
+  - Create webhook in repo
 - Activate repo in priority mode:
- - Create priority label in Gogs
+  - Create priority label in Gogs
 - Sync issues
- - Add them to `To Do` list
+  - Add them to `To Do` list
 - Moving cards are synchronised between priority and normal boards
 
-(waiting [merge](https://github.com/wekan/wekan/pull/1199)
+(waiting [merge](https://github.com/wekan/wekan/pull/1199))
