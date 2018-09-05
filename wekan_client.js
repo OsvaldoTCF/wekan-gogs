@@ -34,7 +34,7 @@ var wekan = {
                 if (err != null) {
                     if (cb) cb(err, null);
                 } else {
-                    if (cb) cb(null, body._id);
+                    if (cb) cb(null, body._id, body.defaultSwimlaneId);
                 }
             });
         },
@@ -85,11 +85,12 @@ var wekan = {
     },
     Cards: {
         create: function(title, description, boardId,
-            listId, cb) {
+            listId, swimlaneId, cb) {
                 var opts = addToBody('/api/boards/'+boardId+'/lists/'+listId+'/cards', {
                     title: title,
                     authorId: wekan.adminId,
-                    description: description
+                    description: description,
+                    swimlaneId: swimlaneId,
                 });
                 request.post(opts, function(err, res, body) {
                     if (err != null) {
@@ -119,6 +120,30 @@ var wekan = {
                 }
             });
 
+        }
+    },
+    Swimlanes: {
+        create: function(title, boardId, cb) {
+            var opts = addToBody('/api/boards/'+boardId+'/swimlanes', {
+                title: title,
+            });
+            request.post(opts, function(err, res, body) {
+                if (err != null) {
+                    if (cb) cb(err, null);
+                } else {
+                    if (cb) cb(null, body._id);
+                }
+            });
+        },
+        get: function(boardId, cb) {
+            var opts = addToBody('/api/boards/'+boardId+'/swimlanes', {});
+            request.get(opts, function (err, res, body) {
+                if (err != null) {
+                    if (cb) cb(err, null);
+                } else {
+                    if (cb) cb(null, body);
+                }
+            });
         }
     },
     Comments: {

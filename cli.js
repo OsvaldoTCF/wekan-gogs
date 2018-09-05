@@ -130,7 +130,7 @@ vorpal
                             updateKey = args.options.priority?'hook_prioId':'hookId';
                             w2g.updateRepo('repoId', repo.repoId, updateKey, hook.id);
                             if (!args.options.priority) {
-                                w2g.wekanc.Boards.create(args.username+'/'+args.repo, function(err, boardId) {
+                                w2g.wekanc.Boards.create(args.username+'/'+args.repo, function(err, boardId, swimlaneId) {
                                     if (err) {
                                         console.log('Error creating board in Wekan');
                                         callback();
@@ -138,6 +138,8 @@ vorpal
                                     }
                                     updateKey = 'boardId';
                                     w2g.updateRepo('repoId', repo.repoId, updateKey, boardId);
+                                    updateKey = 'defaultSwimlaneId';
+                                    w2g.updateRepo('repoId', repo.repoId, updateKey, swimlaneId);
                                     w2g.wekanc.Integrations.create(boardId, w2g.url+'/wekan');
                                     // Create All lists
                                     // if index == 0, then save to-do reference
