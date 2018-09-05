@@ -3,6 +3,10 @@
 
 ### Fixed
 
+## [0.1.1] - 2018-09-06
+### Added
+- #6 Error: Swimlane id is required
+
 ## [0.1] - 2017-11-22
 ### Added
 - #16 Dockerfile
