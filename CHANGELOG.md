@@ -3,7 +3,7 @@
 
 ### Fixed
 
-## [0.1.1] - 2018-09-06
+## [0.2] - 2018-09-06
 ### Added
 - #6 Error: Swimlane id is required
 
