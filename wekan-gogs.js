@@ -4,6 +4,7 @@ var w2g = {
     url: null,
     prioBoardId: null,
     prioBacklogListId: null,
+    prioDefaultSwimlaneId: null,
     wekanc: null,
     gogsc: null,
     db: null,
@@ -45,13 +46,10 @@ var w2g = {
                             row.oldLabelId);
                         w2g.gogsc.Labels.addIssueLabels(row.username,
                             row.repoName, row.issueIndex, [row.newLabelId]);
-                        console.log(row);
-                        if (prio && row.newListId != row.currentListId) {
-                            console.log('Moving repo board');
+                        if (prio && row.cardId && row.newListId != row.currentListId) {
                             w2g.wekanc.Cards.update(row.boardId, row.oldListId, row.cardId, {
                                 listId: row.newListId });
-                        } else if (row.newPrioListId != row.currentPrioListId) {
-                            console.log('Moving prio board');
+                        } else if (row.cardPrioId && row.newPrioListId != row.currentPrioListId) {
                             w2g.wekanc.Cards.update(w2g.prioBoardId, row.oldPrioListId, row.cardPrioId, {
                                 listId: row.newPrioListId });
                         }
@@ -69,7 +67,8 @@ var w2g = {
                 const cardId = hook.cardId;
                 const title = hook.card;
                 const user = hook.user;
-                w2g.newCard(cardId, listId, boardId, title, user);
+                const swimlaneId = hook.swimlaneId;
+                w2g.newCard(cardId, listId, boardId, swimlaneId, title, user);
             }
         },
         archivedCard: function(hook, prio) {
@@ -118,10 +117,12 @@ var w2g = {
                         // Create card
                         var boardId = w2g.prioBoardId;
                         var listId = data.newListId;
+                        var swimlaneId = w2g.prioDefaultSwimlaneId;
                         w2g.wekanc.Cards.create(issue.title,
                             issue.body,
                             boardId,
-                            listId, function(err, cardId) {
+                            listId,
+                            swimlaneId, function(err, cardId) {
                                 if (err != null) {
                                 } else {
                                     //Insert issue
@@ -132,7 +133,8 @@ var w2g = {
                                         cardId,
                                         null,
                                         null,
-                                        listId);
+                                        listId,
+                                        swimlaneId);
                                 }
                             });
                     } else if (!err && !has_prio && data && data.cardPrioId) {
@@ -196,23 +198,24 @@ var w2g = {
         w2g.db.run('INSERT INTO lists_prio VALUES (?,?,?)',
             listId, boardId, labelName);
     },
-    insertPrioBoard: function(userId, boardId, listId) {
-        w2g.db.run('INSERT INTO boards_prio VALUES (?,?,?)',
+    insertPrioBoard: function(userId, boardId, listId, swimlaneId) {
+        w2g.db.run('INSERT INTO boards_prio VALUES (?,?,?,?)',
             userId,
             boardId,
-            listId);
+            listId,
+            swimlaneId);
     },
-    updatePrioBoard: function(userId, boardId, listId) {
+    updatePrioBoard: function(userId, boardId, listId, swimlaneId) {
         w2g.db.run('UPDATE boards_prio SET boardId = ?, \
-                backlogListId = ? WHERE wekan_userid = ?',
-            boardId, listId, userId);
+                backlogListId = ?, defaultSwimlaneId = ?, WHERE wekan_userid = ?',
+            boardId, listId, swimlaneId, userId);
     },
     syncRepos: function() {
         w2g.gogsc.Repos.listMyRepos(function(err, repos) {
             if (!err) {
                 repos.forEach(function(repo) {
                     w2g.db.run('INSERT INTO repos \
-                    SELECT ?, ?, ?, null, null, 0, 0, null, null \
+                    SELECT ?, ?, ?, null, null, 0, 0, null, null, null \
                     WHERE NOT EXISTS(SELECT 1 FROM repos WHERE repoId = ?)',
                         repo.id, repo.owner.username, repo.full_name.split('/').pop(),
                         repo.id);
@@ -252,7 +255,7 @@ var w2g = {
     },
     newIssues: function(username, repoName, issues) {
         w2g.db.get('SELECT l.id AS labelId, \
-                l.listId, r.boardId, r.repoId \
+                l.listId, r.boardId, r.repoId, r.defaultSwimlaneId \
                 FROM labels AS l \
                 INNER JOIN repos AS r \
                 ON r.username = ? AND r.repoName = ? AND r.repoId = l.repoId \
@@ -264,9 +267,9 @@ var w2g = {
                             w2g.db.get('SELECT cardId FROM cards WHERE cards.issueId = ?',
                                 issue.id, function(err, card) {
                                     if (!err && (!card || card.cardId == null)) {
-                                        w2g.wekanc.Cards.create(issue.title, issue.body, row.boardId, row.listId, function(err, cardId) {
+                                        w2g.wekanc.Cards.create(issue.title, issue.body, row.boardId, row.listId, row.defaultSwimlaneId, function(err, cardId) {
                                             if (!err) {
-                                                w2g.insertIssue(issue.id, row.repoId, issue.number, cardId, null, row.boardId, row.listId, null);
+                                                w2g.insertIssue(issue.id, row.repoId, issue.number, cardId, null, row.boardId, row.listId, null, row.defaultSwimlaneId);
                                                 w2g.gogsc.Labels.addIssueLabels(username, repoName, issue.number, [row.labelId]);
                                             } else {
                                                 console.log('Error creating card', err);
@@ -277,7 +280,7 @@ var w2g = {
                         }
                     });
                 } else {
-                    console.log('Error getting data from database');
+                    console.log('newIssues: Error getting data from database');
                 }
             });
     },
@@ -292,7 +295,6 @@ var w2g = {
                 if (!err) {
                     w2g.db.get('SELECT wcommentId FROM comments WHERE gcommentId = ?',
                         gcommentId, function(err, comment) {
-                            console.log(comment, row);
                             if (!err && row && row.cardId && (!comment || !comment.wcommentId)) {
                                 w2g.wekanc.Comments.create(row.boardId, row.cardId, commentBody, function(err, wcommentId) {
                                     w2g.db.run('INSERT INTO comments VALUES (?,?,?)',
@@ -316,7 +318,6 @@ var w2g = {
                 if (!err) {
                     w2g.db.get('SELECT gcommentId FROM comments WHERE wcommentId = ?',
                         wcommentId, function(err, comment) {
-                            console.log(comment, row);
                             if (!err && row && row.issueIndex && (!comment || !comment.gcommentId)) {
                                 w2g.gogsc.Comments.create(row.username, row.repoName, row.issueIndex, commentBody, function(err, gcomment) {
                                     w2g.db.run('INSERT INTO comments VALUES (?,?,?)',
@@ -329,7 +330,7 @@ var w2g = {
                 }
             });
     },
-    newCard: function(cardId, listId, boardId, cardTitle, author) {
+    newCard: function(cardId, listId, boardId, swimlaneId, cardTitle, author) {
         w2g.db.get('SELECT l.id AS labelId, r.repoName, \
             r.repoId, r.username \
             FROM labels AS l \
@@ -342,7 +343,7 @@ var w2g = {
                             if (!err && (!issue || issue.issueId == null)) {
                                 w2g.gogsc.Issues.create(row.username, row.repoName, cardTitle,
                                     '_Issue opened by **'+author+'** in Wekan_', function(err, data){
-                                        w2g.insertIssue(data.id, row.repoId, data.number, cardId, null, boardId, listId, null);
+                                        w2g.insertIssue(data.id, row.repoId, data.number, cardId, null, boardId, listId, null, swimlaneId);
                                         w2g.gogsc.Labels.addIssueLabels(row.username, row.repoName, data.number, [row.labelId]);
                                 });
                             }
@@ -396,11 +397,12 @@ var w2g = {
                 }
             });
     },
-    insertIssue: function(issueId, repoId, issueIndex, cardId, cardPrioId, boardId, listId, listPrioId) {
+    insertIssue: function(issueId, repoId, issueIndex, cardId, cardPrioId, boardId, listId, listPrioId, swimlaneId) {
         w2g.db.run('INSERT OR REPLACE INTO cards VALUES (?,?,?, \
             COALESCE((SELECT cardId FROM cards WHERE issueId = \''+issueId+'\'), ?), \
             COALESCE((SELECT cardPrioId FROM cards WHERE issueId = \''+issueId+'\'), ?), \
             COALESCE((SELECT boardId FROM cards WHERE issueId = \''+issueId+'\'), ?), \
+            COALESCE((SELECT swimlaneId FROM cards WHERE issueId = \''+issueId+'\'), ?), \
             COALESCE((SELECT listId FROM cards WHERE issueId = \''+issueId+'\'), ?), \
             COALESCE((SELECT listPrioId FROM cards WHERE issueId = \''+issueId+'\'), ?))',
             issueId,
@@ -409,6 +411,7 @@ var w2g = {
             cardId,
             cardPrioId,
             boardId,
+            swimlaneId,
             listId,
             listPrioId);
     },
@@ -486,12 +489,13 @@ var w2g = {
                 if (cb) cb(err);
             } else if (!row || !row.boardId) {
                 // Create board
-                w2g.wekanc.Boards.create('Priority', function(err, boardId) {
+                w2g.wekanc.Boards.create('Priority', function(err, boardId, swimlaneId) {
                     if (err != null) {
                         console.log('Error creating priority board!');
                         return;
                     } else {
                         w2g.prioBoardId = boardId;
+                        w2g.prioDefaultSwimlaneId = swimlaneId;
                         w2g.kanLabels.other.forEach(function(label, label_idx, label_array) {
                             // Create list
                             w2g.wekanc.Lists.create(label.name.split(':').pop(),
@@ -503,7 +507,7 @@ var w2g = {
                                         if (label_idx === 0) { // if To Do
                                             w2g.prioBacklogListId = listId;
                                             w2g.insertPrioBoard(w2g.wekanc.adminId,
-                                                boardId, listId);
+                                                boardId, listId, swimlaneId);
                                         } else if (label_idx === label_array.length - 1) {
                                             w2g.wekanc.Integrations.create(boardId, w2g.url+'/wekan/priority', function(err, int) {
                                                 if (err) {
@@ -522,6 +526,7 @@ var w2g = {
                 // Just save the reference
                 w2g.prioBoardId = row.boardId;
                 w2g.prioBacklogListId = row.backlogListId;
+                w2g.prioDefaultSwimlaneId = row.defaultSwimlaneId;
                 w2g.setupPrioLabels(row.boardId);
             }
         });

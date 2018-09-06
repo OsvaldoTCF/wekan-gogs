@@ -6,15 +6,16 @@ CREATE TABLE IF NOT EXISTS 'auth' (
 );
 
 CREATE TABLE IF NOT EXISTS 'repos' (
-	'repoId'	integer,
-	'username'	varchar,
-	'repoName'	varchar,
-	'boardId'	varchar,
-	'backlogListId'	varchar,
-	'active'	integer,
-	'active_prio'	integer,
-	'hookId'	integer,
-	'hook_prioId'	integer,
+	'repoId'		integer,
+	'username'		varchar,
+	'repoName'		varchar,
+	'boardId'		varchar,
+	'backlogListId'		varchar,
+	'active'		integer,
+	'active_prio'		integer,
+	'hookId'		integer,
+	'hook_prioId'		integer,
+	'defaultSwimlaneId' 	varchar,
 	PRIMARY KEY(repoId)
 );
 
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS 'cards' (
 	'cardId'	varchar,
 	'cardPrioId'	varchar,
 	'boardId'	varchar,
+	'swimlaneId'	varchar,
 	'listId'	varchar,
 	'listPrioId'	varchar,
 	PRIMARY KEY(issueId)
@@ -38,9 +40,10 @@ CREATE TABLE IF NOT EXISTS 'comments' (
 );
 
 CREATE TABLE IF NOT EXISTS 'boards_prio' (
-	'wekan_userid'	varchar,
-	'boardId'	varchar,
-	'backlogListId'	varchar,
+	'wekan_userid'		varchar,
+	'boardId'		varchar,
+	'backlogListId'		varchar,
+	'defaultSwimlaneId'	varchar,
 	PRIMARY KEY(wekan_userid)
 );
 
