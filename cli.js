@@ -2,10 +2,8 @@ const vorpal = require('vorpal')();
 var Table = require('cli-table');
 var w2g = null;
 
-vorpal
-    .command('list', 'List repositories')
-    .option('-a, --active', 'List only active repositories')
-    .action(function(args, callback) {
+const w2g_actions = {
+  list: function(args, callback) {
         w2g.db.all('SELECT * FROM repos', function(err, repos) {
             if (!err && repos) {
                 var table = new Table({
@@ -26,12 +24,8 @@ vorpal
                 callback();
             }
         });
-    });
-
-vorpal
-    .command('deactivate <username> <repo>', 'Deactivate repository')
-    .option('-p, --priority', 'Deactivate repo in priority board')
-    .action(function(args, callback) {
+    },
+  deactivate: function(args, callback) {
         var console = this;
         w2g.db.get('SELECT * FROM repos WHERE username = ? AND repoName = ?',
             args.username, args.repo, function(err, repo) {
@@ -96,12 +90,8 @@ vorpal
                     callback();
                 }
             });
-    });
-
-vorpal
-    .command('activate <username> <repo>', 'Activate repository')
-    .option('-p, --priority', 'Activate repo in priority board')
-    .action(function(args, callback) {
+    },
+  activate: function(args, callback) {
         var url = (args.options.priority)?w2g.url+'/gogs/priority':w2g.url+'/gogs';
         w2g.db.get('SELECT * FROM repos WHERE username = ? AND repoName = ?',
             args.username, args.repo, function(err, repo) {
@@ -219,11 +209,8 @@ vorpal
                         }
                     });
             });
-    });
-
-vorpal
-    .command('sync issues <username> <repo> <page>', 'Sync repository issues (only run this after activate)')
-    .action(function(args, callback) {
+    },
+  syncIssues: function(args, callback) {
         w2g.db.get('SELECT * FROM repos WHERE username = ? AND repoName = ?',
             args.username, args.repo, function(err, repo) {
                 exists = (!err && repo);
@@ -238,14 +225,35 @@ vorpal
                     callback();
                 }
             });
-    });
+    },
+  syncRepos: function(args, callback) {
+        w2g.syncRepos();
+        callback();
+    },
+};
+
+vorpal
+    .command('list', 'List repositories')
+    .option('-a, --active', 'List only active repositories')
+    .action(w2g_actions.list);
+
+vorpal
+    .command('deactivate <username> <repo>', 'Deactivate repository')
+    .option('-p, --priority', 'Deactivate repo in priority board')
+    .action(w2g_actions.deactivate);
+
+vorpal
+    .command('activate <username> <repo>', 'Activate repository')
+    .option('-p, --priority', 'Activate repo in priority board')
+    .action(w2g_actions.activate);
+
+vorpal
+    .command('sync issues <username> <repo> <page>', 'Sync repository issues (only run this after activate)')
+    .action(w2g_actions.syncIssues);
 
 vorpal
     .command('sync repos [username]', 'Sync repository list')
-    .action(function(args, callback) {
-        w2g.syncRepos();
-        callback();
-    });
+    .action(w2g_actions.syncRepos);
 
 vorpal
     .delimiter('wekan-gogs:')
