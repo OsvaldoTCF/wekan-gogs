@@ -30,9 +30,15 @@ var run = function(w2g) {
         res.status(200).send('OK');
     });
 
-    app.listen(port, function() {
+    var server = app.listen(port, function() {
         console.log('Listening on port '+port);
+        process.on('SIGINT', function() {
+          console.log("Caught interrupt signal");
+          server.close();
+          process.exit();
+        });
     });
+
 };
 
 module.exports = {

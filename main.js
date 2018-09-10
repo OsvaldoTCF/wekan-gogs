@@ -18,7 +18,7 @@ var main = function() {
     }
 
     // Optional parameters
-    config.cli = (process.env.WG_CLI)?true:false;
+    config.cli = (process.env.WG_CLI === 'true')?true:false;
     config.gogs_token = (process.env.WG_GOGS_TOKEN)?process.env.WG_GOGS_TOKEN:null;
 
     // Required parameters
@@ -34,6 +34,9 @@ var main = function() {
         if (err) {
             console.log(err);
             process.exit(1);
+        } else if (config.cli)  {
+            var cli = require('./cli.js')(w2g);
+            cli.show();
         } else {
             server.run(w2g);
         }

@@ -622,11 +622,5 @@ module.exports = function(config, cb) {
         }
     });
 
-    if(!config.cli){
-        cb(null, w2g);
-    }
-    var cli = require('./cli.js')(w2g);
-    cli.show();
-
     cb(null, w2g);
 };
